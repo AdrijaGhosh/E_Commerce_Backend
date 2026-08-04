@@ -22,8 +22,8 @@ public class Order {
     @ManyToOne
     @JoinColumn(name="user_id")
     private Users users;
-    @OneToMany(mappedBy = "order")
+    @OneToMany(mappedBy = "order",cascade = CascadeType.ALL)
     private List<OrderItem> orderItems;
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     private Payment payment;
 }

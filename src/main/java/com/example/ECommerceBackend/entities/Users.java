@@ -21,7 +21,7 @@ public class Users {
     private String role;
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     private Cart cart;
     @OneToMany(mappedBy = "users")
     private List<Order> orders;
