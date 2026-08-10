@@ -10,7 +10,7 @@ import lombok.*;
 public class UserProfileDTO {
     private String name;
     private String email;
-    private String password;
+
     private String phone;
     private String address;
     private String role;

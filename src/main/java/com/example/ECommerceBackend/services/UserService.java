@@ -4,14 +4,31 @@ import com.example.ECommerceBackend.dtos.*;
 import com.example.ECommerceBackend.entities.Users;
 import com.example.ECommerceBackend.repositories.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.core.AuthenticationException;
+import java.util.Collections;
 
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
     @Autowired
     private UsersRepository usersRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private JwtService jwtService;
+    @Autowired @Lazy
+    private AuthenticationManager authenticationManager;
+
     private static final String ADMIN_SECRET_CODE="ADMIN123";
 
     public UserResponseDTO registerUser(UserRegisterRequestDTO req) {
@@ -23,7 +40,7 @@ public class UserService {
         Users user=Users.builder()
                 .name(req.getName())
                 .email(req.getEmail())
-                .password(req.getPassword())
+                .password(passwordEncoder.encode(req.getPassword()))
                 .phone(req.getPhone())
                 .address(req.getAddress())
                 .role(role)
@@ -42,19 +59,24 @@ public class UserService {
         if(user==null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Email not found");
         }
-        if(!user.getPassword().equals(req.getPassword()))
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(req.getEmail(),req.getPassword())
+            );
+        }
+        catch (AuthenticationException e)
         {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Password did not match");
         }
 
-                return UserResponseDTO.builder().name(user.getName()).email(user.getEmail()).role(user.getRole()).build();
+            String token=jwtService.generateToken(user.getEmail(),user.getId(),user.getRole());
+                return UserResponseDTO.builder().name(user.getName()).email(user.getEmail()).role(user.getRole()).token(token).build();
     }
 
     public UserProfileDTO getUserProfile(Long id) {
         Users user=usersRepository.findById(id).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"User not found"));
         return UserProfileDTO.builder().name(user.getName())
                 .email(user.getEmail())
-                .password(user.getPassword())
                 .phone(user.getPhone())
                 .address(user.getAddress())
                 .role(user.getRole())
@@ -70,11 +92,19 @@ public class UserService {
         Users updatedUser=usersRepository.save(user);
         return UserProfileDTO.builder()
                 .name(updatedUser.getName())
-                .password(updatedUser.getPassword())
                 .email(updatedUser.getEmail())
                 .phone(updatedUser.getPhone())
                 .address(updatedUser.getAddress())
                 .role(updatedUser.getRole())
                 .build();
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Users user1=usersRepository.findByEmail(email);
+        if(user1==null)
+            throw new UsernameNotFoundException("User not found with email :"+email);
+        return User.builder().username(user1.getEmail()).password(user1.getPassword())
+                .authorities(Collections.emptyList()).build();
     }
 }
