@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,11 +28,13 @@ public class UsersController {
         return ResponseEntity.ok(userService.loginUser(req));
     }
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or @userSecurity.isSelf(#id, authentication)")
     public ResponseEntity<UserProfileDTO> getUserProfile(@PathVariable Long id)
     {
         return ResponseEntity.ok(userService.getUserProfile(id));
     }
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or @userSecurity.isSelf(#id, authentication)")
     public ResponseEntity<UserProfileDTO> updateUserProfile(@PathVariable Long id, @RequestBody UserUpdateDTO req)
     {
         return ResponseEntity.ok(userService.updateProfile(id,req));
