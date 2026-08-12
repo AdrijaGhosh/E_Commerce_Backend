@@ -25,5 +25,6 @@ public class Product {
     private List<CartItem> cartItems;
     @OneToMany(mappedBy = "product")
     private List<OrderItem> orderItems;
-
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductImage> images;
 }
