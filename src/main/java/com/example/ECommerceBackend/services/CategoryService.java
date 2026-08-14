@@ -49,4 +49,11 @@ public class CategoryService {
         else
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Category do not exists.");
     }
+
+    public CategoryResponseDTO editCategory(Long id, CategoryRequestDTO req) {
+        Category category=categoryRepository.findById(id).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Category not found exception"));
+        category.setName(req.getName());
+        Category saved=categoryRepository.save(category);
+        return CategoryResponseDTO.builder().name(saved.getName()).id(saved.getId()).build();
+    }
 }

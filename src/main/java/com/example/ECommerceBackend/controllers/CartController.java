@@ -23,28 +23,33 @@ public class CartController {
     }
 
     @PostMapping("/add")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CartResponseDTO> addtoCart(@RequestBody AddToCartRequestDTO req)
     {
         return ResponseEntity.ok(cartService.addToCart(req));
     }
 
     @PutMapping("/{cartItemId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CartResponseDTO> updateCart(@RequestBody UpdateCartItemRequestDTO req, @PathVariable Long cartItemId)
     {
         return ResponseEntity.ok(cartService.updateCart(req,cartItemId));
     }
     @PutMapping("/addOne/{cartItemId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity <CartResponseDTO> addOneCart(@PathVariable Long cartItemId)
     {
         return ResponseEntity.ok(cartService.addOneItem(cartItemId));
     }
     @PutMapping("/removeOne/{cartItemId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CartResponseDTO> removeOneCart(@PathVariable Long cartItemId)
     {
         return ResponseEntity.ok(cartService.removeByOne(cartItemId));
     }
 
     @DeleteMapping("/{cartItemId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CartResponseDTO> deleteItemFromCart(@PathVariable Long cartItemId)
     {
         return ResponseEntity.ok(cartService.deleteItemFromCart(cartItemId));

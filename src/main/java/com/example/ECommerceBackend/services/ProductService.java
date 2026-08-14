@@ -2,6 +2,7 @@ package com.example.ECommerceBackend.services;
 
 import com.example.ECommerceBackend.dtos.ProductRequestDTO;
 import com.example.ECommerceBackend.dtos.ProductResponseDTO;
+import com.example.ECommerceBackend.dtos.UpdateStockRequestDTO;
 import com.example.ECommerceBackend.entities.Category;
 import com.example.ECommerceBackend.entities.Product;
 import com.example.ECommerceBackend.entities.ProductImage;
@@ -120,4 +121,31 @@ public class ProductService {
                 )
                 .build();
     }
+
+
+    public ProductResponseDTO increaseStock(Long id, UpdateStockRequestDTO req) {
+        if (req.getQuantity() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity to add must be positive");
+        }
+
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+        product.setStock(product.getStock()+req.getQuantity());
+        Product updated=productRepository.save(product);
+        return ProductResponseDTO.builder()
+                .id(updated.getId())
+                .name(updated.getName())
+                .description(updated.getDescription())
+                .price(updated.getPrice())
+                .stock(updated.getStock())
+                .categoryName(updated.getCategory().getName())
+                .imageUrls(
+                        updated.getImages() != null
+                                ? updated.getImages().stream().map(ProductImage::getUrl).toList()
+                                : List.of()
+                )
+                .build();
+    }
+
+
 }

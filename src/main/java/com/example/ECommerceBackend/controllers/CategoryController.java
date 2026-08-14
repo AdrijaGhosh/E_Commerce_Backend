@@ -24,11 +24,13 @@ public class CategoryController {
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<CategoryResponseDTO>> getAllCategories()
     {
         return ResponseEntity.ok(categoryService.getAllCategories());
     }
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CategoryResponseDTO> getCategoryById(@PathVariable Long id)
     {
         return ResponseEntity.ok(categoryService.getById(id));
@@ -40,4 +42,10 @@ public class CategoryController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CategoryResponseDTO> editCategoryName(@PathVariable Long id,@RequestBody CategoryRequestDTO req)
+    {
+        return ResponseEntity.ok(categoryService.editCategory(id,req));
+    }
 }
