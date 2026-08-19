@@ -1,7 +1,9 @@
 package com.example.ECommerceBackend.controllers;
 
+import com.example.ECommerceBackend.dtos.InitiateOrderResponseDTO;
 import com.example.ECommerceBackend.dtos.OrderResponseDTO;
 import com.example.ECommerceBackend.dtos.OrderStatusChangeDTO;
+import com.example.ECommerceBackend.dtos.PaymentConfirmDTO;
 import com.example.ECommerceBackend.services.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,19 @@ public class OrderController {
     {
         return ResponseEntity.ok(orderService.placeOrder());
     }
+
+    @PostMapping("/initiate")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<InitiateOrderResponseDTO> initiateOrder() throws Exception {
+        return ResponseEntity.ok(orderService.initiateOrder());
+    }
+
+    @PostMapping("/confirm")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponseDTO> confirmPayment(@RequestBody PaymentConfirmDTO req) throws Exception {
+        return ResponseEntity.ok(orderService.confirmPayment(req));
+    }
+
     @GetMapping("/user")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<OrderResponseDTO>> getAllOrdersofUser()

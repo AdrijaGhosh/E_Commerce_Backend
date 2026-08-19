@@ -3,6 +3,7 @@ package com.example.ECommerceBackend.controllers;
 
 import com.example.ECommerceBackend.dtos.*;
 import com.example.ECommerceBackend.services.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
@@ -18,7 +19,7 @@ public class UsersController {
     private UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponseDTO> registerUser(@RequestBody UserRegisterRequestDTO req )
+    public ResponseEntity<UserResponseDTO> registerUser(@Valid @RequestBody UserRegisterRequestDTO req )
     {
         return ResponseEntity.ok(userService.registerUser(req));
     }
@@ -33,11 +34,11 @@ public class UsersController {
     {
         return ResponseEntity.ok(userService.getUserProfile(id));
     }
-    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @userSecurity.isSelf(#id, authentication)")
-    public ResponseEntity<UserProfileDTO> updateUserProfile(@PathVariable Long id, @RequestBody UserUpdateDTO req)
+    @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UserProfileDTO> updateUserProfile(@Valid @RequestBody UserUpdateDTO req)
     {
-        return ResponseEntity.ok(userService.updateProfile(id,req));
+        return ResponseEntity.ok(userService.updateProfile(req));
     }
 
 }

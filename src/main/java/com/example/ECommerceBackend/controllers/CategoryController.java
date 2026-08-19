@@ -3,6 +3,7 @@ package com.example.ECommerceBackend.controllers;
 import com.example.ECommerceBackend.dtos.CategoryRequestDTO;
 import com.example.ECommerceBackend.dtos.CategoryResponseDTO;
 import com.example.ECommerceBackend.services.CategoryService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +19,7 @@ public class CategoryController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CategoryResponseDTO> addCategory(@RequestBody CategoryRequestDTO req)
+    public ResponseEntity<CategoryResponseDTO> addCategory(@Valid @RequestBody CategoryRequestDTO req)
     {
         return ResponseEntity.ok(categoryService.addToCategory(req));
     }
@@ -29,12 +30,14 @@ public class CategoryController {
     {
         return ResponseEntity.ok(categoryService.getAllCategories());
     }
+
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CategoryResponseDTO> getCategoryById(@PathVariable Long id)
     {
         return ResponseEntity.ok(categoryService.getById(id));
     }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCategoryById(@PathVariable Long id) {
@@ -44,8 +47,8 @@ public class CategoryController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CategoryResponseDTO> editCategoryName(@PathVariable Long id,@RequestBody CategoryRequestDTO req)
+    public ResponseEntity<CategoryResponseDTO> editCategoryName(@PathVariable Long id, @Valid @RequestBody CategoryRequestDTO req)
     {
-        return ResponseEntity.ok(categoryService.editCategory(id,req));
+        return ResponseEntity.ok(categoryService.editCategory(id, req));
     }
 }

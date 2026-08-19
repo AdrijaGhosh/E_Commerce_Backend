@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -31,10 +32,15 @@ public class UserService implements UserDetailsService {
 
     private static final String ADMIN_SECRET_CODE="ADMIN123";
 
+    private Users getLoggedInUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return usersRepository.findByEmail(email);
+    }
+
     public UserResponseDTO registerUser(UserRegisterRequestDTO req) {
         if(usersRepository.existsByEmail(req.getEmail()))
         {
-            throw new RuntimeException("Email already registered");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Email already exists ");
         }
         String role=ADMIN_SECRET_CODE.equals(req.getAdminCode())?"ADMIN":"CUSTOMER";
         Users user=Users.builder()
@@ -83,13 +89,15 @@ public class UserService implements UserDetailsService {
                 .build();
     }
 
-    public UserProfileDTO updateProfile(Long id, UserUpdateDTO req) {
-        Users user=usersRepository.findById(id).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"User not found"));
+    public UserProfileDTO updateProfile(UserUpdateDTO req) {
+        Users user = getLoggedInUser();
         user.setName(req.getName());
         user.setAddress(req.getAddress());
-        user.setPassword(req.getPassword());
+        user.setPassword(passwordEncoder.encode(req.getPassword()));   // was storing raw password before — fixed
         user.setPhone(req.getPhone());
-        Users updatedUser=usersRepository.save(user);
+
+        Users updatedUser = usersRepository.save(user);
+
         return UserProfileDTO.builder()
                 .name(updatedUser.getName())
                 .email(updatedUser.getEmail())

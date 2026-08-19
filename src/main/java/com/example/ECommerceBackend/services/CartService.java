@@ -82,10 +82,14 @@ public class CartService {
         {
             CartItem newItem=CartItem.builder().cart(cart).product(product).quantity(req.getQuantity()).build();
             cartItemRepository.save(newItem);
+            cart.getCartItems().add(newItem);
         }
         return getCartByUserId(curr.getId());
     }
-
+    public CartResponseDTO getMyCart() {
+        Users curr = getLoggedInUser();
+        return getCartByUserId(curr.getId());
+    }
     private Users getLoggedInUser() {
         String email= SecurityContextHolder.getContext().getAuthentication().getName();
         return usersRepository.findByEmail(email);

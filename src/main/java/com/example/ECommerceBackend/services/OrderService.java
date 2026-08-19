@@ -1,8 +1,6 @@
 package com.example.ECommerceBackend.services;
 
-import com.example.ECommerceBackend.dtos.OrderItemResponseDTO;
-import com.example.ECommerceBackend.dtos.OrderResponseDTO;
-import com.example.ECommerceBackend.dtos.OrderStatusChangeDTO;
+import com.example.ECommerceBackend.dtos.*;
 import com.example.ECommerceBackend.entities.*;
 import com.example.ECommerceBackend.repositories.*;
 import jakarta.transaction.Transactional;
@@ -28,6 +26,10 @@ public class OrderService {
     private CartItemRepository cartItemRepository;
     @Autowired
     private CartRepository cartRepository;
+    @Autowired
+    private RazorpayService razorpayService;
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     @Transactional
     public OrderResponseDTO placeOrder() {
@@ -92,6 +94,129 @@ public class OrderService {
     private Users getLoggedInUser() {
         String email= SecurityContextHolder.getContext().getAuthentication().getName();
         return usersRepository.findByEmail(email);
+    }
+
+    @Transactional
+    public InitiateOrderResponseDTO initiateOrder() throws Exception
+    {
+        Users curr=getLoggedInUser();
+        if(curr.getCart()==null)
+        {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cart is empty");
+        }
+        Cart cart=cartRepository.findByIdForUpdate(curr.getCart().getId()).orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,"Cart is empty"));
+        if (cart.getCartItems() == null || cart.getCartItems().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cart is empty");
+        }
+        for(CartItem ci:cart.getCartItems())
+        {
+            if (ci.getQuantity() > ci.getProduct().getStock()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Insufficient stock for product: " + ci.getProduct().getName());
+        }
+        }
+        double total = cart.getCartItems().stream()
+                .mapToDouble(ci -> ci.getProduct().getPrice() * ci.getQuantity())
+                .sum();
+        com.razorpay.Order razorpayOrder=razorpayService.createRazorpayOrder(total);
+        Payment payment = Payment.builder()
+                .amount(total)
+                .status("CREATED")
+                .method("razorpay")
+                .razorpayOrderId(razorpayOrder.get("id"))
+                .build();
+
+        Order order = Order.builder()
+                .status("PENDING_PAYMENT")
+                .users(curr)
+                .totalAmount(total)
+                .payment(payment)
+                .build();
+        Order savedOrder=orderRepository.save(order);
+
+        return InitiateOrderResponseDTO.builder()
+                .internalOrderId(savedOrder.getId())
+                .razorpayOrderId(razorpayOrder.get("id"))
+                .amount(total)
+                .currency("INR")
+                .razorpayKeyId(razorpayService.getKeyId())
+                .build();
+    }
+
+    @Transactional
+    public OrderResponseDTO confirmPayment(PaymentConfirmDTO req)throws Exception{
+        Order order = orderRepository.findById(req.getInternalOrderId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+
+        Users curr = getLoggedInUser();
+        if (!order.getUsers().getId().equals(curr.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This order does not belong to you");
+        }
+        if (!"PENDING_PAYMENT".equals(order.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This order is not awaiting payment");
+        }
+        boolean valid=razorpayService.verifySignature(
+                order.getPayment().getRazorpayOrderId(),
+                req.getRazorpayPaymentId(),
+                req.getRazorpaySignature()
+        );
+        if (!valid) {
+            order.getPayment().setStatus("FAILED");
+            paymentRepository.save(order.getPayment());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment verification failed");
+        }
+        order.getPayment().setStatus("PAID");
+        order.getPayment().setRazorpayPaymentId(req.getRazorpayPaymentId());
+        order.setStatus("PLACED");
+        Cart cart = curr.getCart();
+        List<CartItem> cartItems = new ArrayList<>(cart.getCartItems());
+        List<OrderItem> orderItems = new ArrayList<>();
+
+        for (CartItem ci : cartItems) {
+            Product product = ci.getProduct();
+
+            if (ci.getQuantity() > product.getStock()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Insufficient stock for product: " + product.getName());
+            }
+
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .product(product)
+                    .quantity(ci.getQuantity())
+                    .priceAtPurchase(product.getPrice())
+                    .build();
+            orderItems.add(orderItem);
+
+            product.setStock(product.getStock() - ci.getQuantity());
+            productRepository.save(product);
+        }
+        order.setOrderItems(orderItems);
+        Order savedOrder = orderRepository.save(order);
+
+        cart.getCartItems().clear();
+        cartRepository.save(cart);
+
+        return mapToDTO(savedOrder);
+    }
+
+
+    private OrderResponseDTO mapToDTO(Order order) {
+        List<OrderItemResponseDTO> itemDTOs = order.getOrderItems().stream()
+                .map(oi -> OrderItemResponseDTO.builder()
+                        .productId(oi.getProduct().getId())
+                        .productName(oi.getProduct().getName())
+                        .quantity(oi.getQuantity())
+                        .priceAtPurchase(oi.getPriceAtPurchase())
+                        .build())
+                .toList();
+
+        return OrderResponseDTO.builder()
+                .orderId(order.getId())
+                .status(order.getStatus())
+                .totalAmount(order.getTotalAmount())
+                .items(itemDTOs)
+                .build();
     }
 
     public List<OrderResponseDTO> getAllOrderOfUser() {
