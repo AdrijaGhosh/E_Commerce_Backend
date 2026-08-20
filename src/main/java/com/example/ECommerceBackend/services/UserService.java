@@ -4,6 +4,7 @@ import com.example.ECommerceBackend.dtos.*;
 import com.example.ECommerceBackend.entities.Users;
 import com.example.ECommerceBackend.repositories.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,8 +30,8 @@ public class UserService implements UserDetailsService {
     private JwtService jwtService;
     @Autowired @Lazy
     private AuthenticationManager authenticationManager;
-
-    private static final String ADMIN_SECRET_CODE="ADMIN123";
+    @Value("${admin.secret.code}")
+    private String ADMIN_SECRET_CODE;
 
     private Users getLoggedInUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
