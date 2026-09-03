@@ -1,5 +1,6 @@
 package com.example.ECommerceBackend.controllers;
 
+import com.example.ECommerceBackend.dtos.PagedProductResponseDTO;
 import com.example.ECommerceBackend.dtos.ProductRequestDTO;
 import com.example.ECommerceBackend.dtos.ProductResponseDTO;
 import com.example.ECommerceBackend.dtos.UpdateStockRequestDTO;
@@ -28,9 +29,10 @@ public class ProductController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ProductResponseDTO>> showAllProducts()
+    public ResponseEntity <PagedProductResponseDTO> showAllProducts(@RequestParam(defaultValue = "0") int page,
+                                                                    @RequestParam(defaultValue = "20") int size)
     {
-        return ResponseEntity.ok(productService.showAllProducts());
+        return ResponseEntity.ok(productService.showAllProducts(page,size));
     }
 
     @GetMapping("/{id}")

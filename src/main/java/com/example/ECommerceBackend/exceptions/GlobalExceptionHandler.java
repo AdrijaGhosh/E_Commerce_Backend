@@ -23,7 +23,8 @@ public class GlobalExceptionHandler {
     // Safety net for anything unexpected (NullPointerException, etc.) — returns clean JSON instead of a Whitelabel error page
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong. Please try again.");
+        ex.printStackTrace();
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getClass().getSimpleName() + ": " + ex.getMessage());
     }
 
     private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message) {

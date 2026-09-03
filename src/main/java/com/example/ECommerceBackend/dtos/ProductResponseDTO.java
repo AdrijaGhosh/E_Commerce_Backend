@@ -2,6 +2,7 @@ package com.example.ECommerceBackend.dtos;
 
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Getter
@@ -9,7 +10,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductResponseDTO {
+public class ProductResponseDTO implements Serializable {
     private Long id;
     private String name;
     private String description;

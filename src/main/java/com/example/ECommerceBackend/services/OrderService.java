@@ -30,6 +30,8 @@ public class OrderService {
     private RazorpayService razorpayService;
     @Autowired
     private PaymentRepository paymentRepository;
+    @Autowired
+    private ProductService productService;
 
     @Transactional
     public OrderResponseDTO placeOrder() {
@@ -74,6 +76,7 @@ public class OrderService {
         Order savedOrder=orderRepository.save(order);
         cart.getCartItems().clear();
         cartRepository.save(cart);
+        productService.evictProductCache();
         List<OrderItemResponseDTO> itemDTOs = savedOrder.getOrderItems().stream()
                 .map(oi -> OrderItemResponseDTO.builder()
                         .productId(oi.getProduct().getId())
@@ -196,7 +199,7 @@ public class OrderService {
 
         cart.getCartItems().clear();
         cartRepository.save(cart);
-
+        productService.evictProductCache();
         return mapToDTO(savedOrder);
     }
 
