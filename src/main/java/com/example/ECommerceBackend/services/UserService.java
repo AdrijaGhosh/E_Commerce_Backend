@@ -94,7 +94,7 @@ public class UserService implements UserDetailsService {
         Users user = getLoggedInUser();
         user.setName(req.getName());
         user.setAddress(req.getAddress());
-        user.setPassword(passwordEncoder.encode(req.getPassword()));   // was storing raw password before — fixed
+        user.setPassword(passwordEncoder.encode(req.getPassword()));
         user.setPhone(req.getPhone());
 
         Users updatedUser = usersRepository.save(user);

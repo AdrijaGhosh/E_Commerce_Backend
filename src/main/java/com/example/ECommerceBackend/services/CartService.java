@@ -71,7 +71,7 @@ public class CartService {
             curr.setCart(cart);
             usersRepository.save(curr);
         }
-        //if same product already exists-> quantity increases
+
         CartItem existing=cartItemRepository.findByCartIdAndProductId(cart.getId(),product.getId()).orElse(null);
         if(existing!=null)
         {
